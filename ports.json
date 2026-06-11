@@ -1,0 +1,19 @@
+{
+  "_README": "Typed ports manifest for the ci-runner-health organ — the Lego stud (see CONNECTORS.md in the orchestrator). `name` is the literal wiring address: the key decide() reads under `state` (inputs) / writes under `output` (outputs). `type` is a name from the shared vocabulary `types.json`. Two ports connect iff their `type` matches.",
+  "organ": "organ-ci-runner-health",
+  "inputs": [
+    {"name": "runs", "type": "CIRunList", "required": true},
+    {"name": "now", "type": "Timestamp", "required": false}
+  ],
+  "outputs": [
+    {"name": "saturated", "type": "Bool"},
+    {"name": "reason_skipped", "type": "Str"},
+    {"name": "p90_seconds", "type": "Number"},
+    {"name": "sample_size", "type": "Int"},
+    {"name": "max_seconds", "type": "Number"},
+    {"name": "threshold_seconds", "type": "Number"},
+    {"name": "window_hours", "type": "Number"},
+    {"name": "checked_at", "type": "Timestamp"},
+    {"name": "recommendation", "type": "Str"}
+  ]
+}
