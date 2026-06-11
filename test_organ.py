@@ -276,3 +276,41 @@ def test_all_samples_run_clean():
         r = organ.decide(payload["state"], payload.get("context"))
         assert set(r.keys()) == {"output", "rationale", "self_metric"}
         assert "saturated" in r["output"]
+
+
+# --------------------------------------------------------------------------- #
+# sample VERDICT pinning — the conformance workflow only shadow-PRINTS each    #
+# sample, so a verdict flip (e.g. saturated -> hold) would slip through a      #
+# green CI. This table pins each committed sample to the EXACT verdict its     #
+# filename advertises, so a regression turns the pytest job red.               #
+# --------------------------------------------------------------------------- #
+
+# filename (without .json) -> (saturated, recommendation, reason_skipped, decision_path)
+_SAMPLE_VERDICTS = {
+    "healthy_hold": (False, "hold", None, "evaluated"),
+    "insufficient_sample": (False, "insufficient_data", "insufficient_sample", "insufficient_sample"),
+    "saturated_scale_pool": (True, "scale_runner_pool", None, "evaluated"),
+}
+
+
+def test_samples_conform():
+    sample_dir = Path(__file__).parent / "samples"
+    samples = sorted(sample_dir.glob("*.json"))
+    assert samples, "no samples committed"
+    # every committed sample must be pinned, and every pin must have a sample
+    on_disk = {s.stem for s in samples}
+    assert on_disk == set(_SAMPLE_VERDICTS), (
+        f"sample set drifted from the pinned table: "
+        f"on_disk={sorted(on_disk)} pinned={sorted(_SAMPLE_VERDICTS)}"
+    )
+    for s in samples:
+        payload = json.loads(s.read_text())
+        r = organ.decide(payload["state"], payload.get("context"))
+        out = r["output"]
+        sat, rec, reason, path = _SAMPLE_VERDICTS[s.stem]
+        assert out["saturated"] is sat, f"{s.name}: saturated={out['saturated']} expected {sat}"
+        assert out["recommendation"] == rec, f"{s.name}: recommendation={out['recommendation']} expected {rec}"
+        assert out["reason_skipped"] == reason, f"{s.name}: reason_skipped={out['reason_skipped']} expected {reason}"
+        assert r["self_metric"]["decision_path"] == path, (
+            f"{s.name}: decision_path={r['self_metric']['decision_path']} expected {path}"
+        )
