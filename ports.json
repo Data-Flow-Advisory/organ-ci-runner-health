@@ -1,0 +1,34 @@
+{
+  "organ": "organ-ci-runner-health",
+  "summary": "Pure decider: is the self-hosted dfa-ci GitHub Actions runner pool saturating? Computes the p90 queue-wait (run_started_at - created_at) over a rolling window and advises scale_runner_pool / hold.",
+  "source_module": "discovery-engine app/services/ci_runner_health.py (compute_queue_wait + check_ci_runner_health)",
+  "inputs": [
+    {
+      "name": "runs",
+      "type": "CiWorkflowRuns",
+      "required": true,
+      "proposed": true,
+      "description": "Already-fetched recent ci.yml workflow runs, each carrying created_at (queued) and run_started_at (picked up). The organ is HANDED the runs in state.runs; fetching from the GitHub REST API is the spine's effect.",
+      "schema": "bare-array of {created_at: iso8601, run_started_at: iso8601}"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "saturation",
+      "type": "RunnerSaturationVerdict",
+      "proposed": true,
+      "description": "Demand-driven scaling signal: {saturated, recommendation (scale_runner_pool|hold|insufficient_data), p90_seconds, sample_size, reason_skipped}. Advice only — inserting the ci_runner_saturation PendingWidgetAction is the spine's effect.",
+      "produced_at": "output"
+    }
+  ],
+  "non_ports": [
+    "state.now — reference clock for the rolling-window cutoff (control input, derived deterministically from the freshest run when absent; not a connectable data wire)",
+    "context.threshold_seconds / window_hours / min_sample / window_runs — tuning thresholds passed by the spine from env vars, not organ-to-organ data"
+  ],
+  "_checked": {
+    "corpus_checked": "2026-06-11",
+    "oss_checked": "2026-06-11",
+    "corpus_verdict": "KEEP — not a duplicate. Faithful extraction of app/services/ci_runner_health.py (queue-wait p90 nearest-rank + threshold gate + min-sample hold). Closest sibling is organ-runner-status (extracts app/services/runner_status.py), but that is a DISTINCT supply-side decider: it counts dfa-ci runners online and flags 'CI will stall' (zero online + self-hosted target). This organ is the demand-side decider: 'is the queue backing up → add capacity'. Different source module, inputs (run timestamps vs runner-state counts) and verdict; complementary, not duplicative.",
+    "oss_verdict": "KEEP — no adopt candidate. The OSS market (actions/actions-runner-controller, philips-labs/terraform-aws-github-runner, testflows/testflows-github-hetzner-runners, GitHub runner scale-set client) are full autoscaling INFRA systems — k8s operators / webhook-driven provisioners that own and mutate the runner pool. None is a drop-in pure-decider replacement for this ~30-line stdlib p90-saturation core. The impure provisioning already lives in the spine (app/services/infra_autoscaler.py); adopting ARC et al. would be an architecture migration, out of scope for replacing this organ."
+  }
+}
