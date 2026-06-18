@@ -106,6 +106,31 @@ ORGAN_INPUT=samples/saturated_scale_pool.json python3 organ.py
 python -m pytest -q
 ```
 
+## Ports manifest (the connection stud)
+
+[`ports.json`](ports.json) declares this organ's typed ports per the orchestrator's
+[connection standard](https://github.com/Data-Flow-Advisory/orchestrator/blob/feat/drift-gate/CONNECTORS.md):
+`name` is the literal wiring address (the key `decide()` reads under `state` /
+writes under `output`); `type` is a name from the shared vocabulary
+([`types.json`](types.json)) — two ports connect iff their `type` matches.
+
+- **Inputs:** `runs` (`CIRunList`, required) and `now` (`Timestamp`, optional).
+- **Outputs:** the flat verdict keyed by scalar type — `saturated` (`Bool`),
+  `recommendation`/`reason_skipped` (`Str`), `sample_size` (`Int`),
+  the seconds/hours measures (`Number`), and `checked_at` (`Timestamp`).
+
+`check_ports.py` is the port-conformance check the conformance Action runs (and
+[`test_ports.py`](test_ports.py) gates the same logic under `pytest`): it asserts
+`ports.json` parses, every referenced `type` exists in `types.json`, `decide`
+reads each declared input name under `state`, and `decide` writes each declared
+output name under `output` (shadow-run against the committed samples).
+
+> `types.json` is a **vendored** snapshot of the orchestrator vocabulary plus the
+> primitives this organ has to propose (`Bool`/`Int`/`Number`/`Str`/`Timestamp`)
+> and the domain type `CIRunList` — the vocabulary had no scalar types, which a
+> flat-scalar-output organ needs. They are marked `_proposed` pending upstream
+> review into the canonical `types.json`.
+
 ## Purity guarantees
 
 - No DB / network / filesystem / clock access in `decide()`.
