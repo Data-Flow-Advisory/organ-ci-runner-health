@@ -1,0 +1,17 @@
+{
+  "inputs": [
+    {"name": "runs", "type": "array", "required": true},
+    {"name": "now", "type": "string", "required": false}
+  ],
+  "outputs": [
+    {"name": "saturated", "type": "boolean"},
+    {"name": "reason_skipped", "type": "string"},
+    {"name": "p90_seconds", "type": "number"},
+    {"name": "sample_size", "type": "integer"},
+    {"name": "max_seconds", "type": "number"},
+    {"name": "threshold_seconds", "type": "number"},
+    {"name": "window_hours", "type": "number"},
+    {"name": "checked_at", "type": "string"},
+    {"name": "recommendation", "type": "string"}
+  ]
+}
